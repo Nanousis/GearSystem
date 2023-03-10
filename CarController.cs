@@ -54,23 +54,43 @@ public class CarController : MonoBehaviour
     public float increaseGearRPM;
     public float decreaseGearRPM;
     public float changeGearTime=0.5f;
+
+    public GameObject tireTrail;
+    public Material brakeMaterial;
+    public Color brakingColor;
+    public float brakeColorIntensity;
+
     // Start is called before the first frame update
     void Start()
     {
         playerRB = gameObject.GetComponent<Rigidbody>();
-        InstantiateSmoke();
+        InitiateParticles();
     }
 
-    void InstantiateSmoke()
+    void InitiateParticles()
     {
-        wheelParticles.FRWheel = Instantiate(smokePrefab, colliders.FRWheel.transform.position-Vector3.up*colliders.FRWheel.radius, Quaternion.identity, colliders.FRWheel.transform)
-            .GetComponent<ParticleSystem>();
-        wheelParticles.FLWheel = Instantiate(smokePrefab, colliders.FLWheel.transform.position- Vector3.up * colliders.FRWheel.radius, Quaternion.identity, colliders.FLWheel.transform)
-            .GetComponent<ParticleSystem>();
-        wheelParticles.RRWheel = Instantiate(smokePrefab, colliders.RRWheel.transform.position- Vector3.up * colliders.FRWheel.radius, Quaternion.identity, colliders.RRWheel.transform)
-            .GetComponent<ParticleSystem>();
-        wheelParticles.RLWheel = Instantiate(smokePrefab, colliders.RLWheel.transform.position- Vector3.up * colliders.FRWheel.radius, Quaternion.identity, colliders.RLWheel.transform)
-            .GetComponent<ParticleSystem>();
+        if (smokePrefab)
+        {
+            wheelParticles.FRWheel = Instantiate(smokePrefab, colliders.FRWheel.transform.position - Vector3.up * colliders.FRWheel.radius, Quaternion.identity, colliders.FRWheel.transform)
+                .GetComponent<ParticleSystem>();
+            wheelParticles.FLWheel = Instantiate(smokePrefab, colliders.FLWheel.transform.position - Vector3.up * colliders.FRWheel.radius, Quaternion.identity, colliders.FLWheel.transform)
+                .GetComponent<ParticleSystem>();
+            wheelParticles.RRWheel = Instantiate(smokePrefab, colliders.RRWheel.transform.position - Vector3.up * colliders.FRWheel.radius, Quaternion.identity, colliders.RRWheel.transform)
+                .GetComponent<ParticleSystem>();
+            wheelParticles.RLWheel = Instantiate(smokePrefab, colliders.RLWheel.transform.position - Vector3.up * colliders.FRWheel.radius, Quaternion.identity, colliders.RLWheel.transform)
+                .GetComponent<ParticleSystem>();
+        }
+        if (tireTrail)
+        {
+            wheelParticles.FRWheelTrail = Instantiate(tireTrail, colliders.FRWheel.transform.position - Vector3.up * colliders.FRWheel.radius, Quaternion.identity, colliders.FRWheel.transform)
+                .GetComponent<TrailRenderer>();
+            wheelParticles.FLWheelTrail = Instantiate(tireTrail, colliders.FLWheel.transform.position - Vector3.up * colliders.FRWheel.radius, Quaternion.identity, colliders.FLWheel.transform)
+                .GetComponent<TrailRenderer>();
+            wheelParticles.RRWheelTrail = Instantiate(tireTrail, colliders.RRWheel.transform.position - Vector3.up * colliders.FRWheel.radius, Quaternion.identity, colliders.RRWheel.transform)
+                .GetComponent<TrailRenderer>();
+            wheelParticles.RLWheelTrail = Instantiate(tireTrail, colliders.RLWheel.transform.position - Vector3.up * colliders.FRWheel.radius, Quaternion.identity, colliders.RLWheel.transform)
+                .GetComponent<TrailRenderer>();
+        }
     }
     // Update is called once per frame
 
@@ -123,7 +143,7 @@ public class CarController : MonoBehaviour
             if (gearState == GearState.Neutral)
             {
                 clutch = 0;
-                if (gasInput > 0) gearState = GearState.Running;
+                if (Mathf.Abs( gasInput )> 0) gearState = GearState.Running;
             }
             else
             {
@@ -175,6 +195,19 @@ public class CarController : MonoBehaviour
 
         colliders.RRWheel.brakeTorque = brakeInput * brakePower * 0.3f;
         colliders.RLWheel.brakeTorque = brakeInput * brakePower *0.3f;
+        if (brakeMaterial)
+        {
+            if (brakeInput > 0)
+            {
+                brakeMaterial.EnableKeyword("_EMISSION");
+                brakeMaterial.SetColor("_EmissionColor", brakingColor*Mathf.Pow(2,brakeColorIntensity));
+            }
+            else
+            {
+                brakeMaterial.DisableKeyword("_EMISSION");
+                brakeMaterial.SetColor("_EmissionColor", Color.black);
+            }
+        }
 
 
     }
@@ -248,34 +281,49 @@ public class CarController : MonoBehaviour
         colliders.RRWheel.GetGroundHit(out wheelHits[2]);
         colliders.RLWheel.GetGroundHit(out wheelHits[3]);
 
-        float slipAllowance = 0.5f;
+        float slipAllowance = 0.2f;
         if ((Mathf.Abs(wheelHits[0].sidewaysSlip) + Mathf.Abs(wheelHits[0].forwardSlip) > slipAllowance)){
             wheelParticles.FRWheel.Play();
+            wheelParticles.FRWheelTrail.emitting = true;
         }
         else
         {
             wheelParticles.FRWheel.Stop();
+
+            wheelParticles.FRWheelTrail.emitting = false;
         }
         if ((Mathf.Abs(wheelHits[1].sidewaysSlip) + Mathf.Abs(wheelHits[1].forwardSlip) > slipAllowance)){
             wheelParticles.FLWheel.Play();
+
+            wheelParticles.FLWheelTrail.emitting = true;
         }
         else
         {
             wheelParticles.FLWheel.Stop();
+
+            wheelParticles.FLWheelTrail.emitting = false;
         }
         if ((Mathf.Abs(wheelHits[2].sidewaysSlip) + Mathf.Abs(wheelHits[2].forwardSlip) > slipAllowance)){
             wheelParticles.RRWheel.Play();
+
+            wheelParticles.RRWheelTrail.emitting = true;
         }
         else
         {
             wheelParticles.RRWheel.Stop();
+
+            wheelParticles.RRWheelTrail.emitting = false;
         }
         if ((Mathf.Abs(wheelHits[3].sidewaysSlip) + Mathf.Abs(wheelHits[3].forwardSlip) > slipAllowance)){
             wheelParticles.RLWheel.Play();
+
+            wheelParticles.RLWheelTrail.emitting = true;
         }
         else
         {
             wheelParticles.RLWheel.Stop();
+
+            wheelParticles.RLWheelTrail.emitting = false;
         }
 
 
@@ -350,5 +398,10 @@ public class WheelParticles{
     public ParticleSystem FLWheel;
     public ParticleSystem RRWheel;
     public ParticleSystem RLWheel;
+
+    public TrailRenderer FRWheelTrail;
+    public TrailRenderer FLWheelTrail;
+    public TrailRenderer RRWheelTrail;
+    public TrailRenderer RLWheelTrail;
 
 }
